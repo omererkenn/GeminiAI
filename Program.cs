@@ -4,7 +4,7 @@ using GeminiAI.Services.Concrete;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var appSettings =  Config(builder.Services, builder.Configuration);
+var appSettings = Config(builder.Services, builder.Configuration);
 
 // Add services to the container.
 
@@ -15,22 +15,19 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IGeminiService, GeminiService>();
 
-builder.Services.AddHttpClient("GeminiAI", opt =>
+builder.Services.AddHttpClient("GeminiAITextOnly", opt =>
 {
-    opt.BaseAddress = new Uri($"{appSettings.Url}");
+    opt.BaseAddress = new Uri($"{appSettings.TextOnlyUrl}");
+});
+
+builder.Services.AddHttpClient("GeminiAITextAndImage", opt =>
+{
+    opt.BaseAddress = new Uri($"{appSettings.TextAndImageUrl}");
 });
 
 AppSettings Config(IServiceCollection services, IConfiguration configuration)
 {
-    AppSettings appSettings;
-    bool isProd = Convert.ToBoolean(Environment.GetEnvironmentVariable("IS_PROD") ?? "false");
-    if (isProd)
-    {
-        appSettings = new AppSettings(isProd);
-        services.AddSingleton(appSettings);
-        return appSettings;
-    }
-    appSettings = new AppSettings();
+    var appSettings = new AppSettings();
     configuration.GetSection("App").Bind(appSettings);
     services.AddSingleton(appSettings);
     return appSettings;
@@ -40,7 +37,12 @@ AppSettings Config(IServiceCollection services, IConfiguration configuration)
 var app = builder.Build();
 
 app.MapGet("/text-only-input", async (IGeminiService geminiService, string prompt) =>
-    await geminiService.GetContent(prompt));
+    await geminiService.GetTextOnly(prompt));
+
+
+app.MapPost("/text-image-input", async (IFormFile formFile, IGeminiService geminiService, string prompt) =>
+    await geminiService.GetTextAndImage(formFile.OpenReadStream(), prompt));
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

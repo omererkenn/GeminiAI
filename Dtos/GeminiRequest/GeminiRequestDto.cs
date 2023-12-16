@@ -7,7 +7,16 @@ public class Content
 public class Part
 {
     public string text { get; set; }
+    public InlineData inline_data { get; set; }
+
 }
+
+public class InlineData
+{
+    public string mime_type { get; set; }
+    public byte[] data { get; set; }
+}
+
 
 public class GeminiRequestDto
 {
